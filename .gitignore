@@ -1,0 +1,72 @@
+# ========================
+# SISTEMA Y EDITORES (General)
+# ========================
+.DS_Store
+thumbs.db
+.vscode/
+.idea/
+*.log
+
+# ========================
+# BACKEND (Python / Django)
+# ========================
+# Entornos virtuales
+backend/venv/
+backend/env/
+backend/virtualenv/
+
+# Archivos compilados de Python (basura)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Base de datos local (Opcional: descomenta si usas SQLite y no quieres subirla)
+# backend/db.sqlite3
+
+# Variables de entorno y secretos (¡MUY IMPORTANTE!)
+backend/.env
+.env
+
+# Archivos estáticos recolectados (si usas collectstatic)
+backend/staticfiles/
+backend/media/
+
+# ========================
+# FRONTEND (React Native / Expo)
+# ========================
+# Dependencias masivas
+frontend/node_modules/
+
+# Archivos temporales de Expo
+frontend/.expo/
+frontend/web-build/
+frontend/dist/
+
+# Logs de errores
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Si en el futuro generas carpetas nativas (prebuild), esto ayuda:
+frontend/android/app/build/
+frontend/android/app/release/
+frontend/ios/Pods/
+# ========================
+# EXTENSIÓN: TYPESCRIPT & NATIVEWIND
+# ========================
+*.tsbuildinfo
+
+# ========================
+# EXTENSIÓN: DOCKER & INFRA
+# ========================
+# Ignorar datos persistentes locales de bases de datos
+.docker-data/
+postgres_data/
+redis_data/
+
+# ========================
+# EXTENSIÓN: CELERY
+# ========================
+# Archivos pid de celery worker (si los corres local sin docker)
+celerybeat-schedule
+celerybeat.pid
