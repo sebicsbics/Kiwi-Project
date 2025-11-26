@@ -1,4 +1,4 @@
-import { View, Text, Image, Pressable, ScrollView } from 'react-native';
+import { View, Text, Image, Pressable, ScrollView, Alert } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Input, Button } from '@/components/ui';
@@ -9,8 +9,47 @@ export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleSignUp = () => {
+    // Reset errors
+    setEmailError('');
+    setPasswordError('');
+
+    // Validate email
+    if (!email) {
+      setEmailError('Email is required');
+      return;
+    }
+    if (!validateEmail(email)) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+
+    // Validate password
+    if (!password) {
+      setPasswordError('Password is required');
+      return;
+    }
+    if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+
+    // Validate confirm password
+    if (password !== confirmPassword) {
+      setPasswordError('Passwords do not match');
+      return;
+    }
+
+    // If all validations pass
+    Alert.alert('Success', 'Account created successfully!');
     console.log('Sign up with:', email, password);
   };
 
@@ -26,7 +65,7 @@ export default function SignUp() {
           onPress={() => router.back()}
           className="mb-4"
         >
-          <AntDesign name="arrowleft" size={24} color="#1A3044" />
+          <AntDesign name="left" size={24} color="#1A3044" />
         </Pressable>
 
         {/* Logo */}
@@ -48,9 +87,13 @@ export default function SignUp() {
           <Input
             placeholder="Email"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              setEmailError('');
+            }}
             keyboardType="email-address"
             autoCapitalize="none"
+            error={emailError}
           />
         </View>
 
@@ -59,8 +102,12 @@ export default function SignUp() {
           <Input
             placeholder="Password"
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              setPasswordError('');
+            }}
             secureTextEntry
+            error={passwordError}
           />
         </View>
 
@@ -69,7 +116,10 @@ export default function SignUp() {
           <Input
             placeholder="Confirm Password"
             value={confirmPassword}
-            onChangeText={setConfirmPassword}
+            onChangeText={(text) => {
+              setConfirmPassword(text);
+              setPasswordError('');
+            }}
             secureTextEntry
           />
         </View>

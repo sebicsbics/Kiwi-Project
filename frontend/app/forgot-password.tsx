@@ -28,7 +28,7 @@ export default function ForgotPassword() {
             onPress={() => router.back()}
             className="mb-8"
           >
-            <AntDesign name="arrowleft" size={24} color="#1A3044" />
+            <AntDesign name="left" size={24} color="#1A3044" />
           </Pressable>
 
           {/* Title */}
