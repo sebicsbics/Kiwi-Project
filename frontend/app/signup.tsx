@@ -65,13 +65,22 @@ export default function SignUp() {
         </View>
 
         {/* Confirm Password Input */}
-        <View className="mb-6">
+        <View className="mb-4">
           <Input
             placeholder="Confirm Password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
           />
+        </View>
+
+        {/* Forgot Password Link */}
+        <View className="mb-6">
+          <Pressable onPress={() => router.push('/forgot-password')}>
+            <Text className="text-sm text-primary text-right">
+              ¿olvidaste tu contraseña?
+            </Text>
+          </Pressable>
         </View>
 
         {/* Sign Up Button */}

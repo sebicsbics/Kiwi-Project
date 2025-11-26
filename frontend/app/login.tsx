@@ -46,13 +46,22 @@ export default function Login() {
         </View>
 
         {/* Password Input */}
-        <View className="mb-6">
+        <View className="mb-4">
           <Input
             placeholder="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
           />
+        </View>
+
+        {/* Forgot Password Link */}
+        <View className="mb-6">
+          <Pressable onPress={() => router.push('/forgot-password')}>
+            <Text className="text-sm text-primary text-right">
+              ¿olvidaste tu contraseña?
+            </Text>
+          </Pressable>
         </View>
 
         {/* Sign In Button */}
