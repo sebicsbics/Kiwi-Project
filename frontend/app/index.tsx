@@ -22,16 +22,16 @@ export default function Index() {
             </Text>
             
             <View className="gap-3">
-              <Button variant="primary" onPress={() => router.push('/login')}>
+              <Button variant="primary" onPress={() => router.push('/kyc-verification')}>
+                Verificación KYC
+              </Button>
+              
+              <Button variant="secondary" onPress={() => router.push('/login')}>
                 Go to Login
               </Button>
               
-              <Button variant="secondary" onPress={() => router.push('/signup')}>
+              <Button variant="outline" onPress={() => router.push('/signup')}>
                 Go to Sign Up
-              </Button>
-              
-              <Button variant="outline" onPress={() => router.push('/forgot-password')}>
-                Forgot Password
               </Button>
             </View>
           </CardContent>
