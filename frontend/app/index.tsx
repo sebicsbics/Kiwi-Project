@@ -30,8 +30,8 @@ export default function Index() {
                 Go to Sign Up
               </Button>
               
-              <Button variant="outline" onPress={() => console.log('Outline pressed')}>
-                Outline Button
+              <Button variant="outline" onPress={() => router.push('/forgot-password')}>
+                Forgot Password
               </Button>
             </View>
           </CardContent>
