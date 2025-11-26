@@ -1,8 +1,11 @@
 import { Text, View, ScrollView } from "react-native";
+import { useRouter } from "expo-router";
 import { Button } from "@/components/ui";
 import { Card, CardHeader, CardContent } from "@/components/ui";
 
 export default function Index() {
+  const router = useRouter();
+
   return (
     <View className="flex-1 bg-gray-50 dark:bg-gray-900">
       <ScrollView className="flex-1 px-4 py-6">
@@ -19,8 +22,8 @@ export default function Index() {
             </Text>
             
             <View className="gap-3">
-              <Button variant="primary" onPress={() => console.log('Primary pressed')}>
-                Primary Button
+              <Button variant="primary" onPress={() => router.push('/login')}>
+                Go to Login
               </Button>
               
               <Button variant="secondary" onPress={() => console.log('Secondary pressed')}>
