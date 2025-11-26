@@ -26,8 +26,8 @@ export default function Index() {
                 Go to Login
               </Button>
               
-              <Button variant="secondary" onPress={() => console.log('Secondary pressed')}>
-                Secondary Button
+              <Button variant="secondary" onPress={() => router.push('/signup')}>
+                Go to Sign Up
               </Button>
               
               <Button variant="outline" onPress={() => console.log('Outline pressed')}>
