@@ -1,4 +1,4 @@
-import { View, Text, Image, Pressable, ScrollView } from 'react-native';
+import { View, Text, Image, Pressable, ScrollView, Alert } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Input, Button } from '@/components/ui';
@@ -8,8 +8,37 @@ export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleLogin = () => {
+    // Reset errors
+    setEmailError('');
+    setPasswordError('');
+
+    // Validate email
+    if (!email) {
+      setEmailError('Email necesario');
+      return;
+    }
+    if (!validateEmail(email)) {
+      setEmailError('Porfavor ingrese un email válido');
+      return;
+    }
+
+    // Validate password
+    if (!password) {
+      setPasswordError('Contraseña necesaria');
+      return;
+    }
+
+    // If all validations pass
+    Alert.alert('Success', 'Login successful!');
     console.log('Login with:', email, password);
   };
 
@@ -39,9 +68,13 @@ export default function Login() {
           <Input
             placeholder="Email"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              setEmailError('');
+            }}
             keyboardType="email-address"
             autoCapitalize="none"
+            error={emailError}
           />
         </View>
 
@@ -50,8 +83,12 @@ export default function Login() {
           <Input
             placeholder="Password"
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              setPasswordError('');
+            }}
             secureTextEntry
+            error={passwordError}
           />
         </View>
 

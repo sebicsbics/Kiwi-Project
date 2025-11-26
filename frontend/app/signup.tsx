@@ -24,27 +24,27 @@ export default function SignUp() {
 
     // Validate email
     if (!email) {
-      setEmailError('Email is required');
+      setEmailError('Email necesario');
       return;
     }
     if (!validateEmail(email)) {
-      setEmailError('Please enter a valid email address');
+      setEmailError('Porfavor ingrese un email válido');
       return;
     }
 
     // Validate password
     if (!password) {
-      setPasswordError('Password is required');
+      setPasswordError('Contraseña necesaria');
       return;
     }
     if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+      setPasswordError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
     // Validate confirm password
     if (password !== confirmPassword) {
-      setPasswordError('Passwords do not match');
+      setPasswordError('Las contraseñas no coinciden');
       return;
     }
 
