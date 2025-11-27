@@ -230,8 +230,8 @@ export default function KYCVerification() {
         {/* Document Type Selection */}
         {currentStep === 'document-type' && (
           <View>
-            <Card className="mb-6">
-              <Text className="text-gray-700 text-base leading-6">
+            <Card className="mb-7">
+              <Text className="text-white text-base leading-6">
                 Para completar tu verificación, necesitamos validar tu identidad. 
                 Selecciona el tipo de documento que deseas usar.
               </Text>
@@ -262,10 +262,10 @@ export default function KYCVerification() {
                   <Ionicons name="information" size={20} color="white" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-base font-semibold text-gray-900 mb-1">
+                  <Text className="text-base font-semibold text-white mb-1">
                     Sube las imágenes de tu {getDocumentLabel()}
                   </Text>
-                  <Text className="text-gray-600 text-sm">
+                  <Text className="text-white text-sm">
                     Asegúrate de que las imágenes sean claras y que toda la información sea legible.
                   </Text>
                 </View>
@@ -308,10 +308,10 @@ export default function KYCVerification() {
                   <Ionicons name="camera" size={20} color="white" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-base font-semibold text-gray-900 mb-1">
+                  <Text className="text-base font-semibold text-white mb-1">
                     Toma una selfie
                   </Text>
-                  <Text className="text-gray-600 text-sm">
+                  <Text className="text-white text-sm">
                     Para validar tu identidad, necesitamos una foto tuya. 
                     Asegúrate de estar en un lugar bien iluminado.
                   </Text>
