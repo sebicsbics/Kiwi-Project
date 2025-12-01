@@ -134,106 +134,104 @@ function TabButton({
 export default function Home() {
   const [activeTab, setActiveTab] = useState('home');
   const [showTransactionForm, setShowTransactionForm] = useState(false);
-  const [transactionType, setTransactionType] = useState("I'm Selling");
-  const [itemType, setItemType] = useState('Car, Apartment, truck');
-  const [amount, setAmount] = useState('1,000');
-  const [currency, setCurrency] = useState('USD');
   
-  const formHeight = useRef(new Animated.Value(0)).current;
+  const cardMargin = useRef(new Animated.Value(0)).current;
+  const cardRadius = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.timing(formHeight, {
-      toValue: showTransactionForm ? 1 : 0,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
+    Animated.parallel([
+      Animated.timing(cardMargin, {
+        toValue: showTransactionForm ? 24 : 0,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+      Animated.timing(cardRadius, {
+        toValue: showTransactionForm ? 24 : 0,
+        duration: 300,
+        useNativeDriver: false,
+      })
+    ]).start();
   }, [showTransactionForm]);
-
-  const formAnimatedHeight = formHeight.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 240],
-  });
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <View className="flex-1">
-        {/* Header with Gradient */}
-        <LinearGradient
-          colors={['#8BC53F', '#A8DA63']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          className="pb-8 rounded-b-[10px]"
-        >
+        {/* Header */}
+        <View className="bg-white pt-2 pb-6">
           {/* Top Bar */}
-          <View className="flex-row items-center justify-between px-6 pt-2 pb-6">
-            {/* Logo */}
+          <View className="flex-row items-center justify-between px-6 pb-6">
+            {/* Logo - changes based on state */}
             <Image
-              source={require('@/assets/images/logo-Kiwi-contrast.png')}
+              source={showTransactionForm 
+                ? require('@/assets/images/logo-Kiwi-contrast.png')
+                : require('@/assets/images/logo-Kiwi.png')
+              }
               className="w-20 h-20"
               resizeMode="contain"
             />
             
             {/* Bell Icon */}
             <Pressable className="p-2">
-              <Ionicons name="notifications-outline" size={24} color="white" />
+              <Ionicons name="notifications-outline" size={24} color="#1A3044" />
             </Pressable>
           </View>
 
-          {/* Title and Subtitle */}
-          <View className="px-6 mb-6">
-            <Text className="text-2xl font-bold text-white text-center mb-2">
-              Compra y vende de forma segura
-            </Text>
-            <Text className="text-sm text-white text-center opacity-90 leading-5">
-              Realiza transacciones con un proceso 100% seguro entre tú y tus socios
-            </Text>
-          </View>
-
-          {/* Transaction Form - Animated */}
-          <Animated.View 
-            style={{ 
-              height: formAnimatedHeight,
+          {/* Animated Gradient Card */}
+          <Animated.View
+            style={{
+              marginHorizontal: cardMargin,
+              borderRadius: cardRadius,
               overflow: 'hidden',
             }}
           >
-            <View className="px-6 mb-4">
-              {/* Transaction Type Dropdown */}
-              <Pressable className="bg-white rounded-xl px-4 py-3 mb-3 flex-row items-center justify-between border border-gray-200">
-                <Text className="text-navy text-sm">{transactionType}</Text>
-                <Ionicons name="chevron-down" size={20} color="#1A3044" />
-              </Pressable>
+            <LinearGradient
+              colors={['#8BC53F', '#A8DA63']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              className="pb-6"
+            >
+              {/* Title and Subtitle */}
+              <View className="px-6 pt-6 pb-6">
+                <Text className="text-2xl font-bold text-white text-center mb-2">
+                  Compra y vende de forma segura
+                </Text>
+                <Text className="text-sm text-white text-center opacity-90 leading-5">
+                  Realiza transacciones con un proceso 100% seguro entre tú y tus socios
+                </Text>
+              </View>
 
-              {/* Item Type Dropdown */}
-              <Pressable className="bg-white rounded-xl px-4 py-3 mb-3 flex-row items-center justify-between border border-gray-200">
-                <Text className="text-gray-500 text-sm">{itemType}</Text>
-                <Ionicons name="chevron-down" size={20} color="#1A3044" />
-              </Pressable>
-
-              {/* Amount Input with Currency */}
-              <View className="flex-row gap-3">
-                <View className="flex-1 bg-white rounded-xl px-4 py-3 border border-gray-200">
-                  <Text className="text-primary text-sm font-semibold">$ {amount}</Text>
+              {/* Sell and Buy Buttons - Only show when expanded */}
+              {showTransactionForm && (
+                <View className="px-6 mb-4">
+                  <View className="flex-row gap-3">
+                    <Pressable className="flex-1 bg-white rounded-2xl py-3.5 active:opacity-90">
+                      <Text className="text-center font-semibold text-base text-navy">
+                        Sell
+                      </Text>
+                    </Pressable>
+                    <Pressable className="flex-1 bg-white rounded-2xl py-3.5 active:opacity-90">
+                      <Text className="text-center font-semibold text-base text-navy">
+                        Buy
+                      </Text>
+                    </Pressable>
+                  </View>
                 </View>
-                <Pressable className="bg-white rounded-xl px-4 py-3 flex-row items-center gap-2 border border-gray-200">
-                  <Text className="text-navy text-sm font-medium">{currency}</Text>
-                  <Ionicons name="chevron-down" size={16} color="#1A3044" />
+              )}
+
+              {/* Action Button */}
+              <View className="px-6">
+                <Pressable 
+                  className={`rounded-full py-4 px-6 shadow-lg active:opacity-90 ${showTransactionForm ? 'bg-navy' : 'bg-white'}`}
+                  onPress={() => setShowTransactionForm(!showTransactionForm)}
+                >
+                  <Text className={`text-center font-semibold text-base ${showTransactionForm ? 'text-white' : 'text-navy'}`}>
+                    Iniciar nueva transacción
+                  </Text>
                 </Pressable>
               </View>
-            </View>
+            </LinearGradient>
           </Animated.View>
-
-          {/* Action Button */}
-          <View className="px-6 mb-4">
-            <Pressable 
-              className={`rounded-full py-4 px-6 shadow-lg active:opacity-90 ${showTransactionForm ? 'bg-navy' : 'bg-white'}`}
-              onPress={() => setShowTransactionForm(!showTransactionForm)}
-            >
-              <Text className={`text-center font-semibold text-base ${showTransactionForm ? 'text-white' : 'text-navy'}`}>
-                Iniciar nueva transacción
-              </Text>
-            </Pressable>
-          </View>
-        </LinearGradient>
+        </View>
 
         {/* Main Content */}
         <ScrollView className="flex-1 pt-6">
