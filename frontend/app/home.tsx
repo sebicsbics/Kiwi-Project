@@ -2,6 +2,8 @@ import { View, Text, ScrollView, Pressable, Image, Animated } from 'react-native
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { CircleUser } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { useState, useRef, useEffect } from 'react';
 
 // Types
@@ -137,9 +139,24 @@ export default function Home() {
   
   const cardMargin = useRef(new Animated.Value(0)).current;
   const cardRadius = useRef(new Animated.Value(0)).current;
+  const state1Opacity = useRef(new Animated.Value(1)).current;
+  const state2Opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
+      // Fade out the current state
+      Animated.timing(state1Opacity, {
+        toValue: showTransactionForm ? 0 : 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      // Fade in the new state
+      Animated.timing(state2Opacity, {
+        toValue: showTransactionForm ? 1 : 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      // Animate card properties
       Animated.timing(cardMargin, {
         toValue: showTransactionForm ? 24 : 0,
         duration: 300,
@@ -149,49 +166,53 @@ export default function Home() {
         toValue: showTransactionForm ? 24 : 0,
         duration: 300,
         useNativeDriver: false,
-      })
+      }),
     ]).start();
   }, [showTransactionForm]);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <View className="flex-1">
-        {/* Header */}
-        <View className="bg-white pt-2 pb-6">
-          {/* Top Bar */}
-          <View className="flex-row items-center justify-between px-6 pb-6">
-            {/* Logo - changes based on state */}
-            <Image
-              source={showTransactionForm 
-                ? require('@/assets/images/logo-Kiwi-contrast.png')
-                : require('@/assets/images/logo-Kiwi.png')
-              }
-              className="w-20 h-20"
-              resizeMode="contain"
-            />
-            
-            {/* Bell Icon */}
-            <Pressable className="p-2">
-              <Ionicons name="notifications-outline" size={24} color="#1A3044" />
-            </Pressable>
-          </View>
-
-          {/* Animated Gradient Card */}
-          <Animated.View
-            style={{
-              marginHorizontal: cardMargin,
-              borderRadius: cardRadius,
-              overflow: 'hidden',
+        {/* Header - Both states rendered, controlled by opacity */}
+        <View className="relative">
+          {/* State 1: Green background covering header (Iniciar nueva transacción) */}
+          <Animated.View 
+            style={{ 
+              opacity: state1Opacity,
+              position: showTransactionForm ? 'absolute' : 'relative',
+              width: '100%',
+              zIndex: showTransactionForm ? 0 : 1,
             }}
+            pointerEvents={showTransactionForm ? 'none' : 'auto'}
           >
             <LinearGradient
               colors={['#8BC53F', '#A8DA63']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
-              className="pb-6"
+              className="pt-2 pb-6"
             >
+              {/* Top Bar */}
+              <View className="flex-row items-center justify-between px-6 pb-6">
+                {/* Profile Icon - Left */}
+                <Pressable className="p-2">
+                  <CircleUser size={28} color="#FFFFFF" strokeWidth={2} />
+                </Pressable>
+
+                {/* Logo - Center */}
+                <Image
+                  source={require('@/assets/images/logo-Kiwi-contrast.png')}
+                  className="w-20 h-20"
+                  resizeMode="contain"
+                />
+
+                {/* Notification Icon - Right */}
+                <Pressable className="p-2">
+                  <Ionicons name="notifications-outline" size={28} color="#FFFFFF" />
+                </Pressable>
+              </View>
+
               {/* Title and Subtitle */}
-              <View className="px-6 pt-6 pb-6">
+              <View className="px-6 pb-6">
                 <Text className="text-2xl font-bold text-white text-center mb-2">
                   Compra y vende de forma segura
                 </Text>
@@ -200,36 +221,111 @@ export default function Home() {
                 </Text>
               </View>
 
-              {/* Sell and Buy Buttons - Only show when expanded */}
-              {showTransactionForm && (
-                <View className="px-6 mb-4">
-                  <View className="flex-row gap-3">
-                    <Pressable className="flex-1 bg-white rounded-2xl py-3.5 active:opacity-90">
-                      <Text className="text-center font-semibold text-base text-navy">
-                        Sell
-                      </Text>
-                    </Pressable>
-                    <Pressable className="flex-1 bg-white rounded-2xl py-3.5 active:opacity-90">
-                      <Text className="text-center font-semibold text-base text-navy">
-                        Buy
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
-              )}
-
               {/* Action Button */}
               <View className="px-6">
                 <Pressable 
-                  className={`rounded-full py-4 px-6 shadow-lg active:opacity-90 ${showTransactionForm ? 'bg-navy' : 'bg-white'}`}
+                  className="bg-white rounded-full py-4 px-6 shadow-lg active:opacity-90"
                   onPress={() => setShowTransactionForm(!showTransactionForm)}
                 >
-                  <Text className={`text-center font-semibold text-base ${showTransactionForm ? 'text-white' : 'text-navy'}`}>
+                  <Text className="text-center font-semibold text-base text-navy">
                     Iniciar nueva transacción
                   </Text>
                 </Pressable>
               </View>
             </LinearGradient>
+          </Animated.View>
+
+          {/* State 2: White header with green card below (Sell / Buy) */}
+          <Animated.View 
+            style={{ 
+              opacity: state2Opacity,
+              position: !showTransactionForm ? 'absolute' : 'relative',
+              width: '100%',
+              zIndex: showTransactionForm ? 1 : 0,
+            }}
+            pointerEvents={!showTransactionForm ? 'none' : 'auto'}
+          >
+            {/* Top Bar with white background */}
+            <View className="bg-white pt-2 pb-6">
+              <View className="flex-row items-center justify-between px-6 pb-6">
+                {/* Profile Icon - Left */}
+                <Pressable className="p-2">
+                  <CircleUser size={28} color="#1A3044" strokeWidth={2} />
+                </Pressable>
+
+                {/* Logo - Center */}
+                <Image
+                  source={require('@/assets/images/logo-Kiwi.png')}
+                  className="w-20 h-20"
+                  resizeMode="contain"
+                />
+
+                {/* Notification Icon - Right */}
+                <Pressable className="p-2">
+                  <Ionicons name="notifications-outline" size={28} color="#1A3044" />
+                </Pressable>
+              </View>
+
+              {/* Animated Gradient Card */}
+              <Animated.View
+                style={{
+                  marginHorizontal: cardMargin,
+                  borderRadius: cardRadius,
+                  overflow: 'hidden',
+                }}
+              >
+                <LinearGradient
+                  colors={['#8BC53F', '#A8DA63']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  className="pb-6"
+                >
+                  {/* Title and Subtitle */}
+                  <View className="px-6 pt-6 pb-6">
+                    <Text className="text-2xl font-bold text-white text-center mb-2">
+                      Compra y vende de forma segura
+                    </Text>
+                    <Text className="text-sm text-white text-center opacity-90 leading-5">
+                      Realiza transacciones con un proceso 100% seguro entre tú y tus socios
+                    </Text>
+                  </View>
+
+                  {/* Sell and Buy Buttons */}
+                  <View className="px-6 mb-4">
+                    <View className="flex-row gap-3">
+                      <Pressable 
+                        className="flex-1 bg-white rounded-2xl py-3.5 active:opacity-90"
+                        onPress={() => router.push('/create-listing')}
+                      >
+                        <Text className="text-center font-semibold text-base text-navy">
+                          Sell
+                        </Text>
+                      </Pressable>
+                      <Pressable 
+                        className="flex-1 bg-white rounded-2xl py-3.5 active:opacity-90"
+                        onPress={() => router.push('/scan-or-enter-code')}
+                      >
+                        <Text className="text-center font-semibold text-base text-navy">
+                          Buy
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+
+                  {/* Action Button */}
+                  <View className="px-6">
+                    <Pressable 
+                      className="bg-navy rounded-full py-4 px-6 shadow-lg active:opacity-90"
+                      onPress={() => setShowTransactionForm(!showTransactionForm)}
+                    >
+                      <Text className="text-center font-semibold text-base text-white">
+                        Iniciar nueva transacción
+                      </Text>
+                    </Pressable>
+                  </View>
+                </LinearGradient>
+              </Animated.View>
+            </View>
           </Animated.View>
         </View>
 
