@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/ui';
 import { contractsService, type Contract } from '@/services/contracts';
 import { storage } from '@/utils/storage';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Timeline step configuration
 interface TimelineStep {
@@ -40,15 +41,15 @@ const TIMELINE_STEPS: TimelineStep[] = [
   {
     id: 'received',
     status: 'RELEASED',
-    title: 'Recibido',
-    description: 'Confirma que el producto está de acuerdo con el contrato y estás satisfecho.',
+    title: 'Recibido y Fondos liberados',
+    description: 'Has confirmado la recepción del producto y los fondos han sido liberados al vendedor.',
     number: 4,
   },
   {
     id: 'completed',
     status: 'COMPLETED',
-    title: 'Fondos liberados',
-    description: 'El pago se enviará al vendedor.',
+    title: 'Completado',
+    description: 'La transacción ha finalizado exitosamente.',
     number: 5,
   },
 ];
@@ -58,6 +59,16 @@ const getStepState = (step: TimelineStep, currentStatus: string): 'completed' | 
   const statusOrder = ['DRAFT', 'AWAITING_PAYMENT', 'LOCKED', 'IN_TRANSIT', 'RELEASED', 'COMPLETED'];
   const currentIndex = statusOrder.indexOf(currentStatus);
   const stepIndex = statusOrder.indexOf(step.status);
+
+  // When funds are released (RELEASED), all previous steps including RELEASED should be completed
+  if (currentStatus === 'RELEASED' && stepIndex <= statusOrder.indexOf('RELEASED')) {
+    return 'completed';
+  }
+
+  // When transaction is completed, all steps should be completed
+  if (currentStatus === 'COMPLETED') {
+    return 'completed';
+  }
 
   if (stepIndex < currentIndex) return 'completed';
   if (stepIndex === currentIndex) return 'active';
@@ -132,11 +143,13 @@ function TimelineStepItem({
 }
 
 export default function ContractTrackingScreen() {
+  const { user } = useAuth();
   const params = useLocalSearchParams();
   const { contractId } = params;
   
   const [contract, setContract] = useState<Contract | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -171,6 +184,47 @@ export default function ContractTrackingScreen() {
     }
   };
 
+  const handleConfirmShipment = () => {
+    Alert.alert(
+      'Confirmar Envío',
+      '¿Confirmas que has enviado el producto al comprador?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Confirmar',
+          style: 'default',
+          onPress: confirmShipment,
+        },
+      ]
+    );
+  };
+
+  const confirmShipment = async () => {
+    if (!contractId) return;
+
+    try {
+      setIsProcessing(true);
+      const token = await storage.getAccessToken();
+      
+      if (!token) {
+        Alert.alert('Error', 'Debes iniciar sesión');
+        return;
+      }
+
+      const response = await contractsService.confirmShipment(parseInt(contractId as string), token);
+      
+      // Update local contract state
+      setContract(response.contract);
+      
+      Alert.alert('Éxito', 'Envío confirmado. El comprador ha sido notificado.');
+    } catch (err: any) {
+      console.error('Error confirming shipment:', err);
+      Alert.alert('Error', err.message || 'No se pudo confirmar el envío');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleReleaseFunds = () => {
     Alert.alert(
       'Liberar Fondos',
@@ -180,13 +234,77 @@ export default function ContractTrackingScreen() {
         {
           text: 'Confirmar',
           style: 'default',
-          onPress: () => {
-            // TODO: Implement release funds API call
-            Alert.alert('Próximamente', 'La liberación de fondos estará disponible pronto');
-          },
+          onPress: releaseFunds,
         },
       ]
     );
+  };
+
+  const releaseFunds = async () => {
+    if (!contractId) return;
+
+    try {
+      setIsProcessing(true);
+      const token = await storage.getAccessToken();
+      
+      if (!token) {
+        Alert.alert('Error', 'Debes iniciar sesión');
+        return;
+      }
+
+      const response = await contractsService.releaseFunds(parseInt(contractId as string), token);
+      
+      // Update local contract state
+      setContract(response.contract);
+      
+      Alert.alert('Éxito', 'Fondos liberados. El vendedor ha sido notificado.');
+    } catch (err: any) {
+      console.error('Error releasing funds:', err);
+      Alert.alert('Error', err.message || 'No se pudo liberar los fondos');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCompleteContract = () => {
+    Alert.alert(
+      'Finalizar Contrato',
+      '¿Confirmas que has recibido los fondos y deseas finalizar este contrato?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Finalizar',
+          style: 'default',
+          onPress: completeContract,
+        },
+      ]
+    );
+  };
+
+  const completeContract = async () => {
+    if (!contractId) return;
+
+    try {
+      setIsProcessing(true);
+      const token = await storage.getAccessToken();
+      
+      if (!token) {
+        Alert.alert('Error', 'Debes iniciar sesión');
+        return;
+      }
+
+      const response = await contractsService.completeContract(parseInt(contractId as string), token);
+      
+      // Update local contract state
+      setContract(response.contract);
+      
+      Alert.alert('Éxito', 'Contrato finalizado exitosamente.');
+    } catch (err: any) {
+      console.error('Error completing contract:', err);
+      Alert.alert('Error', err.message || 'No se pudo finalizar el contrato');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleReportProblem = () => {
@@ -228,7 +346,15 @@ export default function ContractTrackingScreen() {
     );
   }
 
-  const canReleaseFunds = contract.status === 'IN_TRANSIT' || contract.status === 'LOCKED';
+  // Determine user role
+  const isSeller = user && contract.seller.id === user.id;
+  const isBuyer = user && contract.buyer && contract.buyer.id === user.id;
+  
+  // Button visibility logic
+  const canMakePayment = isBuyer && contract.status === 'AWAITING_PAYMENT';
+  const canConfirmShipment = isSeller && contract.status === 'LOCKED';
+  const canReleaseFunds = isBuyer && (contract.status === 'IN_TRANSIT' || contract.status === 'LOCKED');
+  const canCompleteContract = isSeller && contract.status === 'RELEASED';
   const canReportProblem = contract.status !== 'COMPLETED' && contract.status !== 'REFUNDED' && contract.status !== 'DRAFT';
 
   return (
@@ -286,20 +412,70 @@ export default function ContractTrackingScreen() {
 
         {/* Actions */}
         <View className="px-6 pb-8 gap-3">
+          {canMakePayment && (
+            <Button
+              variant="primary"
+              size="lg"
+              onPress={() => router.push(`/payment?contractId=${contract.id}`)}
+              disabled={isProcessing}
+              className="w-full bg-[#1A3044]"
+            >
+              Realizar Pago
+            </Button>
+          )}
+          
+          {canConfirmShipment && (
+            <Button
+              variant="primary"
+              size="lg"
+              onPress={handleConfirmShipment}
+              disabled={isProcessing}
+              className="w-full bg-[#1A3044]"
+            >
+              {isProcessing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                'Confirmar envío'
+              )}
+            </Button>
+          )}
+          
           {canReleaseFunds && (
             <Button
               variant="primary"
               size="lg"
               onPress={handleReleaseFunds}
+              disabled={isProcessing}
               className="w-full bg-[#1A3044]"
             >
-              Liberar fondos
+              {isProcessing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                'Liberar fondos'
+              )}
+            </Button>
+          )}
+          
+          {canCompleteContract && (
+            <Button
+              variant="primary"
+              size="lg"
+              onPress={handleCompleteContract}
+              disabled={isProcessing}
+              className="w-full bg-green-600"
+            >
+              {isProcessing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                'Finalizar contrato'
+              )}
             </Button>
           )}
           
           {canReportProblem && (
             <Pressable
               onPress={handleReportProblem}
+              disabled={isProcessing}
               className="w-full py-4 rounded-xl bg-red-500 active:opacity-80"
             >
               <Text className="text-white text-center font-semibold text-base">

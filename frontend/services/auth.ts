@@ -9,6 +9,7 @@ export interface User {
   phone?: string;
   ci_number?: string;
   is_verified: boolean;
+  kyc_status: 'not_submitted' | 'pending' | 'verified' | 'rejected';
   created_at: string;
 }
 

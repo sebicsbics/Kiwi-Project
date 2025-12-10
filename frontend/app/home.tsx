@@ -2,12 +2,14 @@ import { View, Text, ScrollView, Pressable, Image, Animated, Alert, ActivityIndi
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { CircleUser, LogOut } from 'lucide-react-native';
+import { CircleUser, LogOut, Bell } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { contractsService, type MyTransaction } from '@/services/contracts';
 import { storage } from '@/utils/storage';
+import ProfileSidebar from '@/components/ProfileSidebar';
+import { NotificationBadge } from '@/components/NotificationBadge';
 
 // Helper functions
 const formatCurrency = (price: string): string => {
@@ -150,6 +152,7 @@ export default function Home() {
   const [transactions, setTransactions] = useState<MyTransaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showProfileSidebar, setShowProfileSidebar] = useState(false);
   
   const cardMargin = useRef(new Animated.Value(0)).current;
   const cardRadius = useRef(new Animated.Value(0)).current;
@@ -256,6 +259,11 @@ export default function Home() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
+      <ProfileSidebar 
+        visible={showProfileSidebar} 
+        onClose={() => setShowProfileSidebar(false)} 
+      />
+      
       <View className="flex-1">
         {/* Header - Both states rendered, controlled by opacity */}
         <View className="relative">
@@ -278,24 +286,33 @@ export default function Home() {
               {/* Top Bar */}
               <View className="flex-row items-center justify-between px-6 pb-6">
                 {/* User Info - Left */}
-                <View className="flex-row items-center gap-2">
+                <Pressable 
+                  onPress={() => setShowProfileSidebar(true)}
+                  className="flex-row items-center gap-2"
+                >
                   <CircleUser size={28} color="#FFFFFF" strokeWidth={2} />
                   <Text className="text-white font-semibold text-base">
                     {user?.username || 'Usuario'}
                   </Text>
-                </View>
+                </Pressable>
 
-                {/* Logo - Center */}
+                {/* Notification Bell - Right */}
+                <Pressable
+                  onPress={() => router.push('/notifications')}
+                  className="relative w-10 h-10 rounded-full bg-white/20 items-center justify-center active:opacity-70"
+                >
+                  <Bell size={24} color="#FFFFFF" strokeWidth={2} />
+                  <NotificationBadge />
+                </Pressable>
+              </View>
+
+              {/* Logo - Center */}
+              <View className="items-center pb-4">
                 <Image
                   source={require('@/assets/images/logo-Kiwi-contrast.png')}
                   className="w-20 h-20"
                   resizeMode="contain"
                 />
-
-                {/* Logout Icon - Right */}
-                <Pressable className="p-2" onPress={handleLogout}>
-                  <LogOut size={24} color="#FFFFFF" strokeWidth={2} />
-                </Pressable>
               </View>
 
               {/* Title and Subtitle */}
@@ -336,7 +353,10 @@ export default function Home() {
             <View className="bg-white pt-2 pb-6">
               <View className="flex-row items-center justify-between px-6 pb-6">
                 {/* Profile Icon - Left */}
-                <Pressable className="p-2">
+                <Pressable 
+                  className="p-2"
+                  onPress={() => setShowProfileSidebar(true)}
+                >
                   <CircleUser size={28} color="#1A3044" strokeWidth={2} />
                 </Pressable>
 

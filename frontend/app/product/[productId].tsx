@@ -309,7 +309,11 @@ export default function ProductDetailScreen() {
               size="lg"
               className="flex-1"
               onPress={() => {
-                Alert.alert('Próximamente', 'La funcionalidad de pago estará disponible pronto');
+                if (contract.status === 'AWAITING_PAYMENT') {
+                  router.push(`/payment?contractId=${contract.id}`);
+                } else {
+                  router.push(`/contract-tracking?contractId=${contract.id}`);
+                }
               }}
             >
               Realizar pago
@@ -321,7 +325,11 @@ export default function ProductDetailScreen() {
             size="lg"
             className="w-full"
             onPress={() => {
-              Alert.alert('Próximamente', 'La funcionalidad de pago estará disponible pronto');
+              if (contract.status === 'AWAITING_PAYMENT') {
+                router.push(`/payment?contractId=${contract.id}`);
+              } else {
+                Alert.alert('Info', 'Este contrato no está esperando pago');
+              }
             }}
           >
             Realizar pago
