@@ -4,6 +4,7 @@ interface ButtonProps extends PressableProps {
   variant?: 'primary' | 'secondary' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   children: React.ReactNode;
+  disabled?: boolean;
 }
 
 export function Button({ 
@@ -11,14 +12,15 @@ export function Button({
   size = 'md', 
   children, 
   className,
+  disabled = false,
   ...props 
 }: ButtonProps) {
   const baseStyles = 'rounded-lg items-center justify-center';
   
   const variantStyles = {
-    primary: 'bg-primary active:bg-primary-dark',
-    secondary: 'bg-navy active:opacity-90',
-    outline: 'border-2 border-primary active:bg-primary-light/10',
+    primary: disabled ? 'bg-gray-400' : 'bg-primary active:bg-primary-dark',
+    secondary: disabled ? 'bg-gray-400' : 'bg-navy active:opacity-90',
+    outline: disabled ? 'border-2 border-gray-400' : 'border-2 border-primary active:bg-primary-light/10',
   };
   
   const sizeStyles = {
@@ -28,9 +30,9 @@ export function Button({
   };
   
   const textStyles = {
-    primary: 'text-white font-semibold',
-    secondary: 'text-white font-semibold',
-    outline: 'text-primary-dark font-semibold',
+    primary: disabled ? 'text-gray-200 font-semibold' : 'text-white font-semibold',
+    secondary: disabled ? 'text-gray-200 font-semibold' : 'text-white font-semibold',
+    outline: disabled ? 'text-gray-400 font-semibold' : 'text-primary-dark font-semibold',
   };
   
   const textSizeStyles = {
@@ -39,14 +41,22 @@ export function Button({
     lg: 'text-lg',
   };
 
+  // Check if children is a string to wrap in Text
+  const isString = typeof children === 'string';
+
   return (
     <Pressable
       className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className || ''}`}
+      disabled={disabled}
       {...props}
     >
-      <Text className={`${textStyles[variant]} ${textSizeStyles[size]}`}>
-        {children}
-      </Text>
+      {isString ? (
+        <Text className={`${textStyles[variant]} ${textSizeStyles[size]}`}>
+          {children}
+        </Text>
+      ) : (
+        children
+      )}
     </Pressable>
   );
 }

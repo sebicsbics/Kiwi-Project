@@ -1,26 +1,38 @@
-import { View, Text, Image, Pressable, ScrollView, Alert } from 'react-native';
+import { View, Text, Image, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Input, Button } from '@/components/ui';
 import { AntDesign, FontAwesome } from '@expo/vector-icons';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignUp() {
   const router = useRouter();
+  const { register } = useAuth();
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [usernameError, setUsernameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     // Reset errors
+    setUsernameError('');
     setEmailError('');
     setPasswordError('');
+
+    // Validate username
+    if (!username) {
+      setUsernameError('Nombre de usuario necesario');
+      return;
+    }
 
     // Validate email
     if (!email) {
@@ -37,8 +49,8 @@ export default function SignUp() {
       setPasswordError('Contraseña necesaria');
       return;
     }
-    if (password.length < 6) {
-      setPasswordError('La contraseña debe tener al menos 6 caracteres');
+    if (password.length < 8) {
+      setPasswordError('La contraseña debe tener al menos 8 caracteres');
       return;
     }
 
@@ -48,13 +60,46 @@ export default function SignUp() {
       return;
     }
 
-    // If all validations pass
-    Alert.alert('Success', 'Account created successfully!');
-    console.log('Sign up with:', email, password);
+    setIsLoading(true);
+
+    try {
+      await register({
+        username,
+        email,
+        password,
+        password2: confirmPassword,
+      });
+      // Navigation will be handled by _layout.tsx
+      Alert.alert('Éxito', 'Cuenta creada exitosamente');
+    } catch (error: any) {
+      let errorMessage = 'Error al crear la cuenta';
+      
+      if (error.data) {
+        if (error.data.username) {
+          errorMessage = Array.isArray(error.data.username) 
+            ? error.data.username[0] 
+            : error.data.username;
+        } else if (error.data.email) {
+          errorMessage = Array.isArray(error.data.email) 
+            ? error.data.email[0] 
+            : error.data.email;
+        } else if (error.data.password) {
+          errorMessage = Array.isArray(error.data.password) 
+            ? error.data.password[0] 
+            : error.data.password;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSocialSignUp = (provider: string) => {
-    console.log('Sign up with:', provider);
+    Alert.alert('Próximamente', `Inicio de sesión con ${provider} estará disponible pronto`);
   };
 
   return (
@@ -81,6 +126,20 @@ export default function SignUp() {
         <Text className="text-2xl font-bold text-center text-gray-900 mb-8">
           Create your Account
         </Text>
+
+        {/* Username Input */}
+        <View className="mb-4">
+          <Input
+            placeholder="Nombre de usuario"
+            value={username}
+            onChangeText={(text) => {
+              setUsername(text);
+              setUsernameError('');
+            }}
+            autoCapitalize="none"
+            error={usernameError}
+          />
+        </View>
 
         {/* Email Input */}
         <View className="mb-4">
@@ -124,23 +183,19 @@ export default function SignUp() {
           />
         </View>
 
-        {/* Forgot Password Link */}
-        <View className="mb-6">
-          <Pressable onPress={() => router.push('/forgot-password')}>
-            <Text className="text-sm text-primary text-right">
-              ¿olvidaste tu contraseña?
-            </Text>
-          </Pressable>
-        </View>
-
         {/* Sign Up Button */}
         <Button
           variant="primary"
           size="lg"
           onPress={handleSignUp}
           className="mb-6"
+          disabled={isLoading}
         >
-          Sign up
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            'Sign up'
+          )}
         </Button>
 
         {/* Divider */}

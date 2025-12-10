@@ -1,22 +1,25 @@
-import { View, Text, Image, Pressable, ScrollView, Alert } from 'react-native';
+import { View, Text, Image, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Input, Button } from '@/components/ui';
 import { AntDesign, FontAwesome } from '@expo/vector-icons';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     // Reset errors
     setEmailError('');
     setPasswordError('');
@@ -37,9 +40,19 @@ export default function Login() {
       return;
     }
 
-    // If all validations pass
-    Alert.alert('Success', 'Login successful!');
-    console.log('Login with:', email, password);
+    setIsLoading(true);
+
+    try {
+      await login({ email, password });
+      // Navigation will be handled by _layout.tsx
+    } catch (error: any) {
+      Alert.alert(
+        'Error',
+        error.message || 'Error al iniciar sesión. Verifica tus credenciales.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSocialLogin = (provider: string) => {
@@ -107,8 +120,13 @@ export default function Login() {
           size="lg"
           onPress={handleLogin}
           className="mb-6"
+          disabled={isLoading}
         >
-          Sign in
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            'Sign in'
+          )}
         </Button>
 
         {/* Divider */}

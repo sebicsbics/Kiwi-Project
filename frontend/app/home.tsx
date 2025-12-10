@@ -1,10 +1,11 @@
-import { View, Text, ScrollView, Pressable, Image, Animated } from 'react-native';
+import { View, Text, ScrollView, Pressable, Image, Animated, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { CircleUser } from 'lucide-react-native';
+import { CircleUser, LogOut } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useState, useRef, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Types
 type TransactionStatus = 'pending' | 'accepted' | 'sent';
@@ -134,6 +135,7 @@ function TabButton({
 
 // Main Home Screen
 export default function Home() {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   
@@ -141,6 +143,28 @@ export default function Home() {
   const cardRadius = useRef(new Animated.Value(0)).current;
   const state1Opacity = useRef(new Animated.Value(1)).current;
   const state2Opacity = useRef(new Animated.Value(0)).current;
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Cerrar Sesión',
+      '¿Estás seguro que deseas cerrar sesión?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cerrar Sesión',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+              router.replace('/login');
+            } catch (error) {
+              Alert.alert('Error', 'No se pudo cerrar sesión');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   useEffect(() => {
     Animated.parallel([
@@ -193,10 +217,13 @@ export default function Home() {
             >
               {/* Top Bar */}
               <View className="flex-row items-center justify-between px-6 pb-6">
-                {/* Profile Icon - Left */}
-                <Pressable className="p-2">
+                {/* User Info - Left */}
+                <View className="flex-row items-center gap-2">
                   <CircleUser size={28} color="#FFFFFF" strokeWidth={2} />
-                </Pressable>
+                  <Text className="text-white font-semibold text-base">
+                    {user?.username || 'Usuario'}
+                  </Text>
+                </View>
 
                 {/* Logo - Center */}
                 <Image
@@ -205,9 +232,9 @@ export default function Home() {
                   resizeMode="contain"
                 />
 
-                {/* Notification Icon - Right */}
-                <Pressable className="p-2">
-                  <Ionicons name="notifications-outline" size={28} color="#FFFFFF" />
+                {/* Logout Icon - Right */}
+                <Pressable className="p-2" onPress={handleLogout}>
+                  <LogOut size={24} color="#FFFFFF" strokeWidth={2} />
                 </Pressable>
               </View>
 
