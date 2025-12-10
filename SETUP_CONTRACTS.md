@@ -35,7 +35,7 @@ npm install react-native-qrcode-svg react-native-svg expo-clipboard
 
 ```powershell
 cd backend
-python manage.py runserver
+python manage.py runserver 0.0.0.0:8000
 ```
 
 ### 6. Start Frontend (in a new terminal)

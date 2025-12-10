@@ -27,7 +27,7 @@ const TIMELINE_STEPS: TimelineStep[] = [
     id: 'paid',
     status: 'LOCKED',
     title: 'Pagado',
-    description: 'Tu pago está seguro en Vault.',
+    description: 'Tu pago está seguro en Kiwi.',
     number: 2,
   },
   {
