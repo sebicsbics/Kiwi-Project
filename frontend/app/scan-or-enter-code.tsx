@@ -1,22 +1,28 @@
-import { View, Text, Pressable, Alert } from 'react-native';
+import { View, Text, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { useState } from 'react';
 import { ArrowLeft, QrCode, Search } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Button, Input } from '@/components/ui';
+import { contractsService } from '@/services/contracts';
 
-// Utility function to extract productId from various formats
-function extractProductId(code: string): string {
-  // Remove whitespace
-  const trimmedCode = code.trim();
+// Utility function to extract code or ID from various formats
+function extractCodeOrId(input: string): { type: 'code' | 'id'; value: string } {
+  const trimmedInput = input.trim();
   
   // Check if it's a deep link format
-  if (trimmedCode.startsWith('kiwiapp://product/')) {
-    return trimmedCode.split('kiwiapp://product/')[1];
+  if (trimmedInput.startsWith('kiwiapp://product/')) {
+    const id = trimmedInput.split('kiwiapp://product/')[1];
+    return { type: 'id', value: id };
   }
   
-  // Otherwise, assume it's a direct product ID
-  return trimmedCode;
+  // Check if it's a numeric ID
+  if (/^\d+$/.test(trimmedInput)) {
+    return { type: 'id', value: trimmedInput };
+  }
+  
+  // Otherwise, assume it's an access code
+  return { type: 'code', value: trimmedInput.toUpperCase() };
 }
 
 export default function ScanOrEnterCodeScreen() {
@@ -24,33 +30,51 @@ export default function ScanOrEnterCodeScreen() {
   const [manualCode, setManualCode] = useState('');
   const [permission, requestPermission] = useCameraPermissions();
   const [hasScanned, setHasScanned] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const handleQRCodeScanned = ({ data }: { data: string }) => {
+  const handleQRCodeScanned = async ({ data }: { data: string }) => {
     if (hasScanned) return;
     
     setHasScanned(true);
-    const productId = extractProductId(data);
+    setIsSearching(true);
     
-    if (productId) {
-      router.push(`/product/${productId}`);
-    } else {
+    try {
+      // Always navigate directly - buyer assignment happens in the detail view
+      const extracted = extractCodeOrId(data);
+      router.push(`/product/${extracted.value}`);
+    } catch (error: any) {
+      console.error('Error processing QR code:', error);
       Alert.alert('Error', 'Código QR inválido');
       setHasScanned(false);
+    } finally {
+      setIsSearching(false);
     }
   };
 
-  const handleManualSearch = () => {
+  const handleManualSearch = async () => {
     if (!manualCode.trim()) {
       Alert.alert('Error', 'Por favor ingresa un código o link');
       return;
     }
 
-    const productId = extractProductId(manualCode);
-    
-    if (productId) {
-      router.push(`/product/${productId}`);
-    } else {
-      Alert.alert('Error', 'Código inválido');
+    setIsSearching(true);
+
+    try {
+      const extracted = extractCodeOrId(manualCode);
+      
+      if (extracted.type === 'id') {
+        // Direct navigation by ID - buyer assignment happens in detail view
+        router.push(`/product/${extracted.value}`);
+      } else {
+        // Lookup by access code first to get the ID
+        const contract = await contractsService.lookupContract(extracted.value);
+        router.push(`/product/${contract.id}`);
+      }
+    } catch (error: any) {
+      console.error('Error looking up contract:', error);
+      Alert.alert('Error', error.message || 'No se pudo encontrar el contrato');
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -191,12 +215,13 @@ export default function ScanOrEnterCodeScreen() {
             </Text>
 
             <Input
-              placeholder="Ej: 12345 o kiwiapp://product/12345"
+              placeholder="Ej: AX99KL o kiwiapp://product/12345"
               value={manualCode}
               onChangeText={setManualCode}
               className="mb-4"
-              autoCapitalize="none"
+              autoCapitalize="characters"
               autoCorrect={false}
+              editable={!isSearching}
             />
 
             <Button
@@ -204,13 +229,21 @@ export default function ScanOrEnterCodeScreen() {
               size="lg"
               onPress={handleManualSearch}
               className="w-full"
+              disabled={isSearching}
             >
-              Buscar producto
+              {isSearching ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                'Buscar producto'
+              )}
             </Button>
 
             <View className="mt-6 p-4 bg-gray-50 rounded-xl">
               <Text className="text-sm text-gray-600 mb-2">
                 💡 <Text className="font-semibold">Formatos aceptados:</Text>
+              </Text>
+              <Text className="text-sm text-gray-600 ml-4">
+                • Código de acceso: AX99KL
               </Text>
               <Text className="text-sm text-gray-600 ml-4">
                 • ID directo: 12345

@@ -1,15 +1,12 @@
-import { View, Text, ScrollView, Pressable, Image, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, Image, Alert, ActivityIndicator } from 'react-native';
 import { useState } from 'react';
 import { ArrowLeft, ImagePlus, ChevronDown, MapPin } from 'lucide-react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Input, Button } from '@/components/ui';
-
-// Mock seller data
-const SELLER_DATA = {
-  name: 'Sebastian Davalos Rosas',
-  avatar: 'https://i.pravatar.cc/100?u=sebastian',
-};
+import { useAuth } from '@/contexts/AuthContext';
+import { contractsService } from '@/services/contracts';
+import { storage } from '@/utils/storage';
 
 const CONDITIONS = [
   'Nuevo',
@@ -19,12 +16,14 @@ const CONDITIONS = [
 ];
 
 export default function CreateListingScreen() {
+  const { user } = useAuth();
   const [photos, setPhotos] = useState<string[]>([]);
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [condition, setCondition] = useState('');
   const [description, setDescription] = useState('');
   const [showConditionPicker, setShowConditionPicker] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const pickImage = async () => {
     if (photos.length >= 10) {
@@ -49,15 +48,64 @@ export default function CreateListingScreen() {
     setPhotos(photos.filter((_, i) => i !== index));
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (!title || !price || !condition) {
-      Alert.alert('Missing fields', 'Please fill in all required fields');
+      Alert.alert('Campos requeridos', 'Por favor completa todos los campos obligatorios');
       return;
     }
 
-    // TODO: Implement publish logic
-    Alert.alert('Success', 'Listing published successfully!');
-    router.back();
+    if (photos.length === 0) {
+      Alert.alert('Fotos requeridas', 'Por favor agrega al menos una foto del producto');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const token = await storage.getAccessToken();
+      if (!token) {
+        Alert.alert('Error', 'Debes iniciar sesión para crear un contrato');
+        router.replace('/login');
+        return;
+      }
+
+      // Prepare photos data
+      const photosData = photos.map((uri, index) => ({
+        uri,
+        name: `photo_${index}.jpg`,
+        type: 'image/jpeg',
+      }));
+
+      // Create contract
+      const response = await contractsService.createContract(
+        {
+          title,
+          price,
+          condition,
+          description,
+          photos: photosData,
+        },
+        token
+      );
+
+      // Navigate to success screen with contract data
+      router.replace({
+        pathname: '/contract-created',
+        params: {
+          contractId: response.contract.id.toString(),
+          accessCode: response.contract.access_code,
+          qrData: response.contract.qr_code_data,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error creating contract:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'No se pudo crear el contrato. Intenta nuevamente.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -74,29 +122,36 @@ export default function CreateListingScreen() {
           <Text className="text-xl font-semibold text-gray-900">
             New listing
           </Text>
-          <Pressable onPress={handlePublish}>
-            <Text className="text-base font-semibold text-primary">
-              Publish
-            </Text>
+          <Pressable onPress={handlePublish} disabled={isLoading}>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#00B4D8" />
+            ) : (
+              <Text className="text-base font-semibold text-primary">
+                Publicar
+              </Text>
+            )}
           </Pressable>
         </View>
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Seller Info */}
-        <View className="flex-row items-center px-4 py-4 border-b border-gray-100">
-          <Image
-            source={{ uri: SELLER_DATA.avatar }}
-            className="w-12 h-12 rounded-full"
-          />
-          <View className="ml-3 flex-1">
-            <Text className="text-base font-semibold text-gray-900">
-              {SELLER_DATA.name}
-            </Text>
-            <View className="flex-row items-center gap-1">
+        {user && (
+          <View className="flex-row items-center px-4 py-4 border-b border-gray-100">
+            <View className="w-12 h-12 rounded-full bg-primary items-center justify-center">
+              <Text className="text-white text-xl font-bold">
+                {user.first_name?.[0] || user.username[0].toUpperCase()}
+              </Text>
+            </View>
+            <View className="ml-3 flex-1">
+              <Text className="text-base font-semibold text-gray-900">
+                {user.first_name && user.last_name
+                  ? `${user.first_name} ${user.last_name}`
+                  : user.username}
+              </Text>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Add Photos Section */}
         <View className="px-4 py-6 items-center">

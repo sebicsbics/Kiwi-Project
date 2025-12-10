@@ -1,95 +1,104 @@
-import { View, Text, ScrollView, Pressable, Image, Animated, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, Image, Animated, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { CircleUser, LogOut } from 'lucide-react-native';
-import { router } from 'expo-router';
-import { useState, useRef, useEffect } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-
-// Types
-type TransactionStatus = 'pending' | 'accepted' | 'sent';
-
-interface Transaction {
-  id: string;
-  userName: string;
-  userAvatar: string;
-  date: string;
-  status: TransactionStatus;
-  statusText: string;
-  amount: number;
-}
-
-// Mock data
-const mockTransactions: Transaction[] = [
-  {
-    id: '1',
-    userName: 'Eleanor Pena',
-    userAvatar: 'https://i.pravatar.cc/100?u=eleanor',
-    date: '15 May 2023',
-    status: 'pending',
-    statusText: 'Enviado',
-    amount: 275.43
-  },
-  {
-    id: '2',
-    userName: 'Darrell Steward',
-    userAvatar: 'https://i.pravatar.cc/100?u=darrell',
-    date: '15 May 2023',
-    status: 'accepted',
-    statusText: 'Aceptado',
-    amount: 275.43
-  }
-];
+import { contractsService, type MyTransaction } from '@/services/contracts';
+import { storage } from '@/utils/storage';
 
 // Helper functions
-const formatCurrency = (amount: number): string => {
-  return `+$${amount.toFixed(2)}`;
+const formatCurrency = (price: string): string => {
+  const numPrice = parseFloat(price);
+  return `Bs.${numPrice.toFixed(2)}`;
 };
 
-const getStatusBadgeColor = (status: TransactionStatus): string => {
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffHours < 1) return 'Hace unos minutos';
+  if (diffHours < 24) return `Hace ${diffHours}h`;
+  if (diffDays < 7) return `Hace ${diffDays}d`;
+  
+  return date.toLocaleDateString('es-BO', { day: 'numeric', month: 'short' });
+};
+
+const getStatusInfo = (status: string): { text: string; color: string } => {
   switch (status) {
-    case 'pending':
-      return 'bg-[#F5C542]';
-    case 'accepted':
-      return 'bg-primary-dark';
+    case 'DRAFT':
+      return { text: 'Borrador', color: 'bg-gray-400' };
+    case 'AWAITING_PAYMENT':
+      return { text: 'Por pagar', color: 'bg-[#F5C542]' };
+    case 'LOCKED':
+      return { text: 'En Custodia', color: 'bg-blue-500' };
+    case 'IN_TRANSIT':
+      return { text: 'En Tránsito', color: 'bg-purple-500' };
+    case 'RELEASED':
+      return { text: 'Liberado', color: 'bg-green-500' };
+    case 'COMPLETED':
+      return { text: 'Completado', color: 'bg-primary-dark' };
+    case 'DISPUTED':
+      return { text: 'En Disputa', color: 'bg-red-500' };
+    case 'REFUNDED':
+      return { text: 'Reembolsado', color: 'bg-orange-500' };
     default:
-      return 'bg-gray-400';
+      return { text: status, color: 'bg-gray-400' };
   }
 };
 
 // Transaction Card Component
-function TransactionCard({ transaction }: { transaction: Transaction }) {
+function TransactionCard({ transaction, onPress }: { transaction: MyTransaction; onPress: () => void }) {
+  const statusInfo = getStatusInfo(transaction.status);
+  const otherPartyInitial = transaction.other_party_name?.[0]?.toUpperCase() || '?';
+
   return (
-    <View className="bg-white rounded-2xl p-4 mb-3 flex-row items-center shadow-sm">
-      {/* Avatar */}
-      <Image
-        source={{ uri: transaction.userAvatar }}
-        className="w-12 h-12 rounded-full"
-      />
+    <Pressable 
+      onPress={onPress}
+      className="bg-white rounded-2xl p-4 mb-3 flex-row items-center shadow-sm active:opacity-70"
+    >
+      {/* Avatar or Photo */}
+      {transaction.main_photo ? (
+        <Image
+          source={{ uri: transaction.main_photo }}
+          className="w-12 h-12 rounded-full"
+        />
+      ) : (
+        <View className="w-12 h-12 rounded-full bg-primary items-center justify-center">
+          <Text className="text-white text-lg font-bold">{otherPartyInitial}</Text>
+        </View>
+      )}
       
       {/* Info */}
       <View className="flex-1 ml-3">
-        <Text className="text-base font-semibold text-navy mb-1">
-          {transaction.userName}
+        <Text className="text-base font-semibold text-navy mb-1" numberOfLines={1}>
+          {transaction.title}
         </Text>
         <View className="flex-row items-center gap-2">
           <Text className="text-xs text-gray-500">
-            {transaction.date}
+            {formatDate(transaction.created_at)}
           </Text>
-          <View className={`px-2 py-1 rounded-full ${getStatusBadgeColor(transaction.status)}`}>
+          <View className={`px-2 py-1 rounded-full ${statusInfo.color}`}>
             <Text className="text-xs text-white font-medium">
-              {transaction.statusText}
+              {statusInfo.text}
             </Text>
           </View>
         </View>
+        <Text className="text-xs text-gray-500 mt-1">
+          {transaction.role === 'seller' ? 'Comprador' : 'Vendedor'}: {transaction.other_party_name}
+        </Text>
       </View>
       
       {/* Amount */}
       <Text className="text-base font-bold text-primary ml-2">
-        {formatCurrency(transaction.amount)}
+        {formatCurrency(transaction.price)}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -138,11 +147,62 @@ export default function Home() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
   const [showTransactionForm, setShowTransactionForm] = useState(false);
+  const [transactions, setTransactions] = useState<MyTransaction[]>([]);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const cardMargin = useRef(new Animated.Value(0)).current;
   const cardRadius = useRef(new Animated.Value(0)).current;
   const state1Opacity = useRef(new Animated.Value(1)).current;
   const state2Opacity = useRef(new Animated.Value(0)).current;
+
+  // Load transactions
+  const loadTransactions = async (showLoader = true) => {
+    try {
+      if (showLoader) {
+        setIsLoadingTransactions(true);
+      }
+      
+      const token = await storage.getAccessToken();
+      if (!token) {
+        console.log('No token available');
+        return;
+      }
+
+      const data = await contractsService.getMyTransactions(token);
+      setTransactions(data);
+    } catch (error: any) {
+      console.error('Error loading transactions:', error);
+      // Don't show alert for silent refresh
+      if (showLoader) {
+        Alert.alert('Error', 'No se pudieron cargar las transacciones');
+      }
+    } finally {
+      setIsLoadingTransactions(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  // Refresh transactions when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadTransactions(false);
+    }, [])
+  );
+
+  // Initial load
+  useEffect(() => {
+    loadTransactions();
+  }, []);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadTransactions(false);
+  };
+
+  const handleTransactionPress = (transaction: MyTransaction) => {
+    router.push(`/product/${transaction.id}`);
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -357,26 +417,61 @@ export default function Home() {
         </View>
 
         {/* Main Content */}
-        <ScrollView className="flex-1 pt-6">
+        <ScrollView 
+          className="flex-1 pt-6"
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              colors={['#8BC53F']}
+              tintColor="#8BC53F"
+            />
+          }
+        >
 
           {/* Last Transactions Section */}
           <View className="px-6">
             {/* Section Header */}
             <View className="flex-row items-center justify-between mb-4">
               <Text className="text-lg font-bold text-navy">
-                Últimas transacciones
+                Mis transacciones
               </Text>
-              <Pressable>
-                <Text className="text-primary font-semibold">
-                  Ver todo
-                </Text>
-              </Pressable>
+              {transactions.length > 3 && (
+                <Pressable>
+                  <Text className="text-primary font-semibold">
+                    Ver todo
+                  </Text>
+                </Pressable>
+              )}
             </View>
 
-            {/* Transaction Cards */}
-            {mockTransactions.map((transaction) => (
-              <TransactionCard key={transaction.id} transaction={transaction} />
-            ))}
+            {/* Loading State */}
+            {isLoadingTransactions ? (
+              <View className="py-12 items-center">
+                <ActivityIndicator size="large" color="#8BC53F" />
+                <Text className="text-gray-500 mt-4">Cargando transacciones...</Text>
+              </View>
+            ) : transactions.length === 0 ? (
+              /* Empty State */
+              <View className="bg-white rounded-2xl p-8 items-center">
+                <Ionicons name="receipt-outline" size={48} color="#9CA3AF" />
+                <Text className="text-gray-600 text-center mt-4 text-base">
+                  No tienes transacciones aún
+                </Text>
+                <Text className="text-gray-500 text-center mt-2 text-sm">
+                  Comienza comprando o vendiendo un producto
+                </Text>
+              </View>
+            ) : (
+              /* Transaction Cards */
+              transactions.slice(0, 5).map((transaction) => (
+                <TransactionCard 
+                  key={transaction.id} 
+                  transaction={transaction}
+                  onPress={() => handleTransactionPress(transaction)}
+                />
+              ))
+            )}
           </View>
 
           {/* Bottom spacing */}

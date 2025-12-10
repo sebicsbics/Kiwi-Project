@@ -24,3 +24,10 @@ djangorestframework-simplejwt>=5.3,<5.4
 # Utilities
 python-decouple>=3.8
 pytz>=2024.1
+
+# Image Processing & QR Codes
+Pillow>=10.0.0
+qrcode[pil]>=7.4.2
+
+# Finite State Machine
+django-fsm>=3.0.0
