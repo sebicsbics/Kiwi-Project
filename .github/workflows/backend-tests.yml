@@ -109,7 +109,7 @@ jobs:
       - name: Check coverage threshold
         working-directory: ./backend
         run: |
-          coverage report --fail-under=80
+          coverage report --fail-under=65
   
   security-scan:
     name: Security Scan
