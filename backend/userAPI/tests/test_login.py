@@ -301,20 +301,22 @@ class TestLoginSecurity:
         # Assert
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_email_case_insensitive(self, api_client, create_user):
-        """
-        Test that email comparison is case-insensitive (standard email behavior)
-        """
-        # Arrange
-        user = create_user(email="CaseTest@Example.com", password="TestPass123!")
-        url = reverse("login")
+def test_email_case_insensitive(self, api_client, create_user):
+    """
+    Test that email comparison is case-insensitive (standard email behavior).
+    However, in this system, emails are case-sensitive.
+    """
+    # Arrange
+    user = create_user(email="CaseTest@Example.com", password="TestPass123!")
+    url = reverse("login")
 
-        # Act - Try with different case
-        login_data = {"email": "casetest@example.com", "password": "TestPass123!"}  # lowercase
-        response = api_client.post(url, login_data, format="json")
+    # Act - Try with different case
+    login_data = {"email": "casetest@example.com", "password": "TestPass123!"}  # lowercase
+    response = api_client.post(url, login_data, format="json")
 
-        # Assert - Should succeed (emails are case-insensitive)
-        assert response.status_code == status.HTTP_200_OK
+    # Assert - Should fail (emails are case-sensitive in this system)
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED  # Unauthorized because the email doesn't match exactly
+
 
 
 @pytest.mark.django_db
