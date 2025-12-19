@@ -31,3 +31,10 @@ qrcode[pil]>=7.4.2
 
 # Finite State Machine
 django-fsm>=3.0.0
+
+# Code Quality Tools (Development)
+flake8>=6.1.0
+black>=23.0.0
+isort>=5.12.0
+safety>=2.3.0
+bandit>=1.7.0
