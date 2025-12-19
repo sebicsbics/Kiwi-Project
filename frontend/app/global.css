@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #8BC53F;
+  --color-primary-light: #A8DA63;
+  --color-primary-dark: #6FA830;
+  --color-navy: #1A3044;
+  --color-warning: #F5C542;
+}
+
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-primary-light: var(--color-primary-light);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-navy: var(--color-navy);
+  --color-warning: var(--color-warning);
+}
